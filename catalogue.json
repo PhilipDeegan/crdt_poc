@@ -1,0 +1,56 @@
+{
+  "catalogues": [
+    {
+      "color": "#2bbf4040",
+      "name": "Cassini Enceladus flyby events",
+      "author": "jeandet",
+      "uuid": "6b1d91c9-c158-452b-8bb9-a8408648cb03",
+      "tags": [],
+      "predicate": null,
+      "events": [
+        "a0d0fcbe-ff38-4453-bc3d-d74f8d51b487",
+        "8bc52cb7-faac-4396-82ec-16a65fa0ef4e",
+        "99d75c94-a77f-47b0-9056-b4f7c398cb0b",
+        "8143936b-fbf6-47a8-a6fa-0606e9d4b801"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "start": "2017-08-01T10:09:58.664144",
+      "stop": "2017-08-01T10:11:20.413299",
+      "author": "jeandet",
+      "tags": [],
+      "products": [],
+      "rating": null,
+      "uuid": "a0d0fcbe-ff38-4453-bc3d-d74f8d51b487"
+    },
+    {
+      "start": "2011-12-12T04:59:32.872712",
+      "stop": "2011-12-12T05:06:19.634131",
+      "author": "jeandet",
+      "tags": [],
+      "products": [],
+      "rating": null,
+      "uuid": "8bc52cb7-faac-4396-82ec-16a65fa0ef4e"
+    },
+    {
+      "start": "2010-07-05T01:50:36.910012",
+      "stop": "2010-07-05T02:05:43.768914",
+      "author": "jeandet",
+      "tags": [],
+      "products": [],
+      "rating": null,
+      "uuid": "99d75c94-a77f-47b0-9056-b4f7c398cb0b"
+    },
+    {
+      "start": "2010-01-27T00:30:05.897021",
+      "stop": "2010-01-27T00:39:58.621109",
+      "author": "jeandet",
+      "tags": [],
+      "products": [],
+      "rating": null,
+      "uuid": "8143936b-fbf6-47a8-a6fa-0606e9d4b801"
+    }
+  ]
+}
