@@ -3,8 +3,8 @@ import string
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from pycrdt import Array, ArrayEvent, Doc, Map, Text, TransactionEvent
-from pydantic import BaseModel, Field
+from pycrdt import Array, ArrayEvent, Doc, Map, TransactionEvent
+from pydantic import BaseModel
 
 alphabet = string.ascii_uppercase + string.ascii_lowercase + string.digits
 _GLOBALS = dict(docs={})
@@ -17,7 +17,7 @@ def handle_deep_changes(events: list[ArrayEvent]):
 
 def handle_doc_changes(event: TransactionEvent):
     print("\n\nhandle_doc_changes")
-    update: bytes = event.update
+    # update: bytes = event.update
 
 
 class Event(BaseModel):
