@@ -38,7 +38,7 @@ def shutdown():
 
 
 def poll():
-    """ simulate some event loop """
+    """simulate some event loop"""
     while True:
         time.sleep(5)
         wsapp.send("Poll, Server")
