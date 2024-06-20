@@ -1,49 +1,37 @@
 import random
 import string
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from pycrdt import Array, ArrayEvent, Doc, Map, TransactionEvent
-from pydantic import BaseModel
+
+import sciqlop.collab.model.speasy_model as sp_model
+
+# from datetime import datetime
+
 
 alphabet = string.ascii_uppercase + string.ascii_lowercase + string.digits
-_GLOBALS = dict(docs={})
+_GLOBALS = dict(catalogues={})
 
 
 # https://jupyter-server.github.io/pycrdt/usage/#shared-data-events
 def handle_deep_changes(events: list[ArrayEvent]):
-    print("\n\nhandle_deep_changes")
+    # haven't seen this trigger yet
+    # print("handle_deep_changes")
+    ...
 
 
 def handle_doc_changes(event: TransactionEvent):
-    print("\n\nhandle_doc_changes")
+    # Triggers on:
+    #   event creation
+    #   event edit
+    # Does not trigger on catalog creation!
+    # print("\n\nhandle_doc_changes")
     # update: bytes = event.update
+    ...
 
 
-class Event(BaseModel):
-    start: datetime
-    stop: datetime
-    author: str
-    tags: list
-    products: list
-    rating: str
-    uuid: str
-
-    @staticmethod
-    def from_dict(dic: dict[str, str]):
-        return Event(
-            start=datetime.fromisoformat(dic["start"]),
-            stop=datetime.fromisoformat(dic["stop"]),
-            author=dic["author"],
-            tags=dic["tags"],
-            products=dic["products"],
-            rating=dic["rating"],
-            uuid=dic["uuid"],
-        )
-
-
-@dataclass  # crdt doesn't play well with pydantic
-class Document:
+@dataclass
+class Catalogue:
     name: str
     uuid: str
     events_to_idx: dict = field(default_factory=lambda: {})
@@ -54,15 +42,26 @@ class Document:
         self.doc["events"] = self.events
         self.doc.observe(handle_doc_changes)
 
+    def info(self):
+        return {"name": self.name, "uuid": self.uuid}
+
 
 def uuid(k=8):
     return "".join(random.choices(alphabet, k=k))
 
 
-def create_document(name):
-    doc = Document(name=name, uuid=uuid())
-    _GLOBALS["docs"][doc.uuid] = doc
+def create_catalogue(name):
+    doc = Catalogue(name=name, uuid=uuid())
+    _GLOBALS["catalogues"][doc.uuid] = doc
     return doc
+
+
+def list_catalogues():
+    return [c.info() for c in _GLOBALS["catalogues"]]
+
+
+def list_events(catalogue_uuid: str):
+    return get_events(catalogue_uuid)
 
 
 def resolve_crdt_type_for(v):
@@ -71,16 +70,17 @@ def resolve_crdt_type_for(v):
     return str(v)
 
 
-def add_event(doc_id, event):
-    doc = _GLOBALS["docs"][doc_id]
+def create_event(doc_id, event):
+    doc = _GLOBALS["catalogues"][doc_id]
     doc.events_to_idx[event.uuid] = len(doc.events)  # needs mutex?
     doc.events.append(
         Map({k: resolve_crdt_type_for(v) for k, v in event.dict().items()})
     )
+    return event
 
 
 def edit_event(doc_id, event_id, dic):
-    doc = _GLOBALS["docs"][doc_id]
+    doc = _GLOBALS["catalogues"][doc_id]
     doc.events[doc.events_to_idx[event_id]].update(dic)
 
 
@@ -92,6 +92,6 @@ def resolve_regular_for(v):
 
 def get_events(doc_id):
     return [
-        Event.from_dict({k: resolve_regular_for(v) for k, v in ev.items()})
-        for ev in _GLOBALS["docs"][doc_id].events
+        sp_model.Event(**{k: resolve_regular_for(v) for k, v in ev.items()})
+        for ev in _GLOBALS["catalogues"][doc_id].events
     ]

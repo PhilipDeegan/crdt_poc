@@ -1,17 +1,17 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-import crdt.speasy as sp
+import crdt.speasy_crdt_api as sp
 
 app = FastAPI()
 
 
-class CreateCatalogue(BaseModel):
+class CreateCatalogueRequest(BaseModel):
     name: str
 
 
 @app.post("/create_catalogue")
-async def create(req: CreateCatalogue):
+async def create(req: CreateCatalogueRequest):
     doc = sp.create_document(req.name)
     return {"message": "/create_catalog", "doc_id": doc.uuid}
 
