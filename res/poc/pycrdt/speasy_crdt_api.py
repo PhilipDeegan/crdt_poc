@@ -12,11 +12,17 @@ _GLOBALS = dict(docs={})
 
 # https://jupyter-server.github.io/pycrdt/usage/#shared-data-events
 def handle_deep_changes(events: list[ArrayEvent]):
-    print("\n\nhandle_deep_changes")
+    ... # haven't seen this trigger yet
+    #
+    #print("handle_deep_changes")
 
 
 def handle_doc_changes(event: TransactionEvent):
-    print("\n\nhandle_doc_changes")
+    # Triggers on:
+    #   event creation
+    #   event edit
+    # Does not trigger on catalog creation!
+    # print("\n\nhandle_doc_changes")
     # update: bytes = event.update
 
 
@@ -29,17 +35,17 @@ class Event(BaseModel):
     rating: str
     uuid: str
 
-    @staticmethod
-    def from_dict(dic: dict[str, str]):
-        return Event(
-            start=datetime.fromisoformat(dic["start"]),
-            stop=datetime.fromisoformat(dic["stop"]),
-            author=dic["author"],
-            tags=dic["tags"],
-            products=dic["products"],
-            rating=dic["rating"],
-            uuid=dic["uuid"],
-        )
+    # @staticmethod
+    # def from_dict(dic: dict[str, str]):
+    #     return Event(
+    #         start=datetime.fromisoformat(dic["start"]),
+    #         stop=datetime.fromisoformat(dic["stop"]),
+    #         author=dic["author"],
+    #         tags=dic["tags"],
+    #         products=dic["products"],
+    #         rating=dic["rating"],
+    #         uuid=dic["uuid"],
+    #     )
 
 
 @dataclass  # crdt doesn't play well with pydantic
@@ -92,6 +98,6 @@ def resolve_regular_for(v):
 
 def get_events(doc_id):
     return [
-        Event.from_dict({k: resolve_regular_for(v) for k, v in ev.items()})
+        Event(**{k: resolve_regular_for(v) for k, v in ev.items()})
         for ev in _GLOBALS["docs"][doc_id].events
     ]

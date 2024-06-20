@@ -1,10 +1,11 @@
-from typing import Generic, TypeVar
+# from typing import Generic
+from typing import TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 import sciqlop.collab.model.speasy_model as sp_model
 
-DataT = TypeVar("DataT")
+DataT = TypeVar("DataT", bound=BaseModel)
 
 
 def get_classes():
@@ -30,9 +31,20 @@ def response_for(cls):
     raise RuntimeError(f"No response type found for: {cls}")
 
 
-class RequestWrapper(BaseModel, Generic[DataT]):
-    type: str
-    data: DataT
+class MessageWrapper(RootModel[dict[str, BaseModel]]):
+    root: dict[str, DataT]
+
+    @classmethod
+    def make(cls, data) -> "MessageWrapper":
+        return cls({type(data).__name__: data})
+
+
+class ErrorResponse(BaseModel):
+    status_code: int
+
+    @classmethod
+    def status_code(cls, status_code):
+        return cls(status_code=status_code)
 
 
 class ListCataloguesRequest(BaseModel): ...

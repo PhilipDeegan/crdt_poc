@@ -15,12 +15,19 @@ _GLOBALS = dict(catalogues={})
 
 # https://jupyter-server.github.io/pycrdt/usage/#shared-data-events
 def handle_deep_changes(events: list[ArrayEvent]):
-    print("\n\nhandle_deep_changes")
+    # haven't seen this trigger yet
+    # print("handle_deep_changes")
+    ...
 
 
 def handle_doc_changes(event: TransactionEvent):
-    print("\n\nhandle_doc_changes")
+    # Triggers on:
+    #   event creation
+    #   event edit
+    # Does not trigger on catalog creation!
+    # print("\n\nhandle_doc_changes")
     # update: bytes = event.update
+    ...
 
 
 @dataclass
@@ -85,6 +92,6 @@ def resolve_regular_for(v):
 
 def get_events(doc_id):
     return [
-        sp_model.Event.from_dict({k: resolve_regular_for(v) for k, v in ev.items()})
+        sp_model.Event(**{k: resolve_regular_for(v) for k, v in ev.items()})
         for ev in _GLOBALS["catalogues"][doc_id].events
     ]

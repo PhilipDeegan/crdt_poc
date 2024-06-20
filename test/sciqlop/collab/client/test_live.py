@@ -4,6 +4,7 @@
 # needs:
 #  pip install websocket-client
 #
+#
 
 import json
 import time
@@ -11,27 +12,21 @@ from datetime import datetime, timedelta
 from threading import Thread
 
 import sciqlop.collab.client.client as client
-import sciqlop.collab.client.keyboard as kb
 import sciqlop.collab.crdt.manager as cdrt_man
 import sciqlop.collab.model.speasy_model as sp_model
 import sciqlop.collab.server.speasy_ws_api as sp_api
+from sciqlop import ValDict
 
-_globals = dict(poller=None, response_id=1000)
+_globals = ValDict(poller=None, req_id=0, resp_id=0, catalogue_uuid="", event_uuid="")
 client_id = "client_1234"
 WS_URL = f"ws://localhost:8000/ws/{client_id}"
-on_open_fn = None
 catalogue_name = "test_catalogue_123"
 
 
-def test_create_catalogue():
-    _globals["response_id"] = 0
-    return sp_api.CreateCatalogueRequest(name=catalogue_name)
-
-
-def test_create_event():
-    _globals["response_id"] = 1
-    return sp_api.CreateEventRequest(
-        catalogue_uuid=_globals["catalogue_uuid"],
+test_events = {
+    0: lambda: sp_api.CreateCatalogueRequest(name=catalogue_name),
+    1: lambda: sp_api.CreateEventRequest(
+        catalogue_uuid=_globals.catalogue_uuid,
         event=sp_model.Event(
             start=datetime.now() - timedelta(days=356),
             stop=datetime.now() - timedelta(days=356) + timedelta(days=1),
@@ -41,110 +36,87 @@ def test_create_event():
             rating="none",
             uuid=cdrt_man.uuid(),
         ),
-    )
-
-
-def test_edit_event():
-    _globals["response_id"] = 2
-    return sp_api.EditEventRequest(
-        catalogue_uuid=_globals["catalogue_uuid"],
-        event_uuid=_globals["event_uuid"],
+    ),
+    2: lambda: sp_api.ListEventsRequest(catalogue_uuid=_globals.catalogue_uuid),
+    3: lambda: sp_api.EditEventRequest(
+        catalogue_uuid=_globals.catalogue_uuid,
+        event_uuid=_globals.event_uuid,
         dic=dict(author="bananaman"),
-    )
-
-
-def test_list_events():
-    _globals["response_id"] = 3
-    return sp_api.ListEventsRequest(catalogue_uuid=_globals["catalogue_uuid"])
-
-
-test_events = {
-    "cc": test_create_catalogue,
-    "create_catalogue": test_create_catalogue,
-    "ce": test_create_event,
-    "create_event": test_create_event,
-    "ee": test_edit_event,
-    "edit_event": test_edit_event,
-    "le": test_list_events,
-    "list_events": test_list_events,
+    ),
+    4: lambda: sp_api.ListEventsRequest(catalogue_uuid=_globals.catalogue_uuid),
 }
-
-
-def resolve_event(txt):
-    if txt in client.events:
-        return client.events[txt]()
-    if txt in test_events:
-        return test_events[txt]()
-
-
-def handle_keyboard_input():
-    event = resolve_event(kb.poll())
-    if not event:
-        print("event not recognized")
-        time.sleep(1)
-        return
-    print("event", event)
-    client.send(event)
 
 
 def poll():
     """simulate some event loop"""
     while True:
-        handle_keyboard_input()
+        if _globals.req_id not in test_events:
+            # no more work to do
+            break
+
+        if _globals.req_id != _globals.resp_id:
+            print("waiting for response...")
+            time.sleep(1)
+            continue
+
+        print("sending message...")
+        time.sleep(1)
+        client.send(test_events[_globals.req_id]())
+        _globals.req_id += 1
+        time.sleep(2)  # wait for response
 
 
 def on_open(wsapp):
-    try:
-        _globals["poller"] = Thread(target=poll)
-        _globals["poller"].daemon = True
-        _globals["poller"].start()
-    except Exception as e:
-        print(f"EXCEPTION! {e}")
+    _globals.poller = Thread(target=poll)
+    _globals.poller.daemon = True
+    _globals.poller.start()
 
 
-def create_catalogue_response(wsapp, msg):
-    try:
-        print("create_catalogue_response", msg)
-        resp = sp_api.CreateCatalogueResponse(**json.loads(msg))
-        _globals["catalogue_uuid"] = resp.catalogue_uuid
-    except Exception as e:
-        print(f"EXCEPTION! {e}")
+def create_catalogue_response(resp: sp_api.CreateCatalogueResponse):
+    print("create_catalogue_response", resp)
+    _globals.catalogue_uuid = resp.catalogue_uuid
 
 
-def create_event_response(wsapp, msg):
-    try:
-        print("create_event_response", msg)
-        resp = sp_api.CreateEventResponse(**json.loads(msg))
-        _globals["event_uuid"] = resp.event_uuid
-    except Exception as e:
-        print(f"EXCEPTION! {e}")
+def create_event_response(resp: sp_api.CreateEventResponse):
+    print("create_event_response", resp)
+    _globals.event_uuid = resp.event_uuid
 
 
-def edit_event_response(wsapp, msg):
-    print("edit_event_response", msg)
+def edit_event_response(resp: sp_api.EditEventResponse):
+    print("edit_event_response", resp)
 
 
-def list_events_response(wsapp, msg):
-    print("list_events_response", msg)
+def list_events_response(resp: sp_api.ListEventsResponse):
+    print("list_events_response", resp)
 
 
 response_mappers = {
     0: create_catalogue_response,
     1: create_event_response,
-    2: edit_event_response,
+    2: list_events_response,
+    3: edit_event_response,
     4: list_events_response,
 }
 
 
+def parse_response(msg):
+    dic = json.loads(msg)
+    keys = list(dic.keys())
+    return sp_api.available_responses[keys[0]](**dic[keys[0]])  # fail == issue
+
+
 def on_message(wsapp, msg):
-    response_id = _globals["response_id"]
-    if response_id in response_mappers:
-        response_mappers[_globals["response_id"]](wsapp, msg)
-    else:
-        print(msg)
+    response_mappers[_globals.resp_id](parse_response(msg))
+    _globals.resp_id += 1
+    if _globals.resp_id not in response_mappers:
+        time.sleep(3)  # let thread finish
+        client.shutdown()
 
 
 if __name__ == "__main__":
     client.on_open_fn = on_open
     client.on_message_fn = on_message
     client.start(WS_URL).join()
+    assert _globals.catalogue_uuid  # not none or length 0
+    assert _globals.event_uuid
+    print("finished")

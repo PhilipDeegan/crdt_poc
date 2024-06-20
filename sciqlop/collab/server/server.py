@@ -21,37 +21,40 @@ available_actions = actions.available_actions
 def handle_request(data):
     try:
         dic = json.loads(data)
-        if "type" not in dic or "data" not in dic:
-            print("Unknown request type")
-            return
-        req_type = dic["type"]
-        if req_type not in available_requests:
-            print(f"Unknown request type: {req_type}")
-            return
-        req_type = available_requests[req_type]
-        print("req_type", req_type)
-        return available_actions[req_type](req_type(**dic["data"]))
+        keys = list(dic.keys())
+        if len(keys) != 1 or keys[0] not in available_requests:
+            return sp_api.ErrorResponse.status_code(400)
+        req_type, req_data = available_requests[keys[0]], dic[keys[0]]
+        return sp_api.MessageWrapper.make(
+            available_actions[req_type](req_type(**req_data))
+        )
     except Exception as e:
         print(f"Exception: {e}")
         print(traceback.format_exc())
-        return data
+    return sp_api.ErrorResponse.status_code(404)
+
+
+@app.get("/ping")
+def ping():
+    return 200
 
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await manager.connect(websocket)
-    await websocket.send_json({"msg": "Hello WebSocket"})
+    await manager.connect(client_id, websocket)
+    # await websocket.send_json({"msg": "Hello WebSocket"})
+    # send some conenection established message? not sure redundant
 
     try:
         while True:
             data = await websocket.receive_text()
-            print("received: ", data)
-
             response = handle_request(data)
             if not response:
                 continue
             await manager.send_personal_message(response.json(), websocket)
+            # if shared_resource:
+            #   await manager.send_personal_message(response.json(), shared_resource.client_ids)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(client_id, websocket)
         await manager.broadcast(f"Client #{client_id} left the chat")

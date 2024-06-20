@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Catalogue(BaseModel):
@@ -17,19 +17,11 @@ class Event(BaseModel):
     start: datetime
     stop: datetime
     author: str
-    tags: list
-    products: list[Product]
     rating: str
     uuid: str
+    products: list[Product] = Field(default_factory=[])
+    tags: list[str] = Field(default_factory=[])
 
-    @staticmethod
-    def from_dict(dic: dict[str, str]):
-        return Event(
-            start=datetime.fromisoformat(dic["start"]),
-            stop=datetime.fromisoformat(dic["stop"]),
-            author=dic["author"],
-            tags=dic["tags"],
-            products=dic["products"],
-            rating=dic["rating"],
-            uuid=dic["uuid"],
-        )
+    # @staticmethod
+    # def from_dict(dic: dict[str, str]):
+    #     return Event(**dic)

@@ -15,7 +15,7 @@ def list_catalogues(req: sp_api.ListCataloguesRequest) -> sp_api.ListCataloguesR
 def create_catalogue(
     req: sp_api.CreateCatalogueRequest,
 ) -> sp_api.CreateCatalogueResponse:
-    print("!create_catalogue!")
+    # print("!create_catalogue!")
     assert isinstance(req, sp_api.CreateCatalogueRequest)
     return sp_api.CreateCatalogueResponse(
         catalogue_uuid=cdrt_man.create_catalogue(req.name).uuid
