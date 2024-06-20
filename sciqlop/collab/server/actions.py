@@ -15,14 +15,13 @@ def list_catalogues(req: sp_api.ListCataloguesRequest) -> sp_api.ListCataloguesR
 def create_catalogue(
     req: sp_api.CreateCatalogueRequest,
 ) -> sp_api.CreateCatalogueResponse:
-    # print("!create_catalogue!")
     assert isinstance(req, sp_api.CreateCatalogueRequest)
     return sp_api.CreateCatalogueResponse(
         catalogue_uuid=cdrt_man.create_catalogue(req.name).uuid
     )
 
 
-def list_events(req: sp_api.ListEventsRequest) -> sp_api.CreateEventResponse:
+def list_events(req: sp_api.ListEventsRequest) -> sp_api.ListEventsResponse:
     return sp_api.ListEventsResponse(events=cdrt_man.list_events(req.catalogue_uuid))
 
 
@@ -47,10 +46,7 @@ def resolve_actions():
         assert n in globals()
         return globals()[n]
 
-    fns = {}
-    for name, req in sp_api.available_requests.items():
-        fns[req] = req_to_fn(req)
-    return fns
+    return {req: req_to_fn(req) for req in sp_api.available_requests.values()}
 
 
 available_actions = resolve_actions()
