@@ -3,3 +3,4 @@ pydantic
 pycrdt
 websocket-client
 websockets
+sqlalchemy
